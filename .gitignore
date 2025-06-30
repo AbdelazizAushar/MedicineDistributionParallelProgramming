@@ -1,0 +1,35 @@
+# Visual Studio 6 generated folders and files
+Debug/
+*.obj
+*.exe
+*.pdb
+*.ilk
+*.idb
+*.plg
+*.ncb
+*.opt
+*.aps
+
+# Visual Studio workspace files (optional, ignore if you don't want to share)
+*.dsw
+
+# Visual Studio project files (you may want to keep these if sharing project config)
+# *.dsp
+
+# PVM runtime files (usually generated)
+pvmroot/
+
+# Windows thumbnail/cache files
+Thumbs.db
+Desktop.ini
+
+# Backup files
+*~
+*.bak
+*.tmp
+
+# Logs and reports
+*.log
+
+# Gitignore itself should be tracked
+!.gitignore
