@@ -10,12 +10,6 @@ Debug/
 *.opt
 *.aps
 
-# Visual Studio workspace files (optional, ignore if you don't want to share)
-*.dsw
-
-# Visual Studio project files (you may want to keep these if sharing project config)
-# *.dsp
-
 # PVM runtime files (usually generated)
 pvmroot/
 
