@@ -1,10 +1,10 @@
-// distributor.c
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>     // for sleep()
+#include <windows.h>
 #include "distributor.h"
 #include "pvm_helpers.h"
 
+// Static/global variables
 static int distributor_id;
 static int province_id;
 static int province_tid;
@@ -12,28 +12,33 @@ static int average_distribution_time = 2; // default, can be overridden via init
 
 // Initialize distributor info
 int distributor_init(int d_id, int p_id) {
+    int my_tid;
+    int time_buffer[1];
+
     distributor_id = d_id;
     province_id = p_id;
 
-    int my_tid = pvm_init("distributor");
+    my_tid = pvm_init("distributor");
     if (my_tid < 0) return -1;
 
     // Receive average distribution time from province
-    int time_buffer[1];
     if (recv_int_message(-1, MSG_INIT_DISTRIBUTOR, time_buffer, 1) < 0) {
         fprintf(stderr, "? Distributor %d failed to receive init data\n", distributor_id);
         return -1;
     }
 
     average_distribution_time = time_buffer[0];
-    printf("? Distributor %d initialized (Province %d), AvgTime=%ds\n", distributor_id, province_id, average_distribution_time);
+    printf("? Distributor %d initialized (Province %d), AvgTime=%ds\n",
+           distributor_id, province_id, average_distribution_time);
     return 0;
 }
 
 // Receive a single task (simulate hospital/clinic/pharmacy delivery)
 int receive_task() {
     int task_buffer[1]; // Could be a type or ID
-    int sender = recv_int_message(-1, MSG_DISTRIBUTOR_STATUS, task_buffer, 1);
+    int sender;
+
+    sender = recv_int_message(-1, MSG_DISTRIBUTOR_STATUS, task_buffer, 1);
     if (sender < 0) {
         fprintf(stderr, "? Distributor %d failed to receive task\n", distributor_id);
         return -1;
@@ -48,16 +53,20 @@ int receive_task() {
 
 // Simulate task execution
 void execute_task(void* task_data) {
-    int task_type = *((int*)task_data);
-    const char* type_str = task_type == 0 ? "Pharmacy" : task_type == 1 ? "Clinic" : "Hospital";
-    
+    int task_type;
+    const char* type_str;
+
+    task_type = *((int*)task_data);
+    type_str = task_type == 0 ? "Pharmacy" : task_type == 1 ? "Clinic" : "Hospital";
+
     printf("?? Distributor %d delivering to %s...\n", distributor_id, type_str);
-    sleep(average_distribution_time);  // simulate time taken
+    Sleep(average_distribution_time);  // simulate time taken
 }
 
 // Notify province that task is done
 void notify_task_done() {
     int dummy = 0;
+
     send_int_message(province_tid, MSG_DISTRIBUTOR_READY, &dummy, 1);
     printf("? Distributor %d completed task and is now idle\n", distributor_id);
 }
@@ -70,9 +79,11 @@ void wait_for_reassignment() {
 
 // Main loop
 void distributor_run() {
+    int msg_tag;
+    int bufid;
+
     while (1) {
-        int msg_tag;
-        int bufid = pvm_recv(-1, -1);  // Wait for any message
+        bufid = pvm_recv(-1, -1);  // Wait for any message
         pvm_bufinfo(bufid, NULL, &msg_tag, NULL);
 
         switch (msg_tag) {

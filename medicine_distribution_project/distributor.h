@@ -2,7 +2,7 @@
 #define DISTRIBUTOR_H
 
 #include <pvm3.h>
-#include "messages.h"
+#include "message.h"
 
 int distributor_init(int distributor_id, int province_id);
 

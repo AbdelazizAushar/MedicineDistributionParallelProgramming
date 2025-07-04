@@ -14,4 +14,6 @@ void reassign_distributors(int source_province_id, int target_province_id);
 
 void master_finalize();
 
+void notify_province_of_new_distributor(int distributor_tid, int target_province_tid);
+
 #endif 
