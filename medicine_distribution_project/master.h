@@ -2,7 +2,7 @@
 #define MASTER_H
 
 #include <pvm3.h>
-#include "messages.h"
+#include "message.h"
 
 int master_init(int total_provinces);
 
