@@ -14,8 +14,8 @@ void read_user_input(SystemInput* input_data) {
         printf("?? Maximum number of provinces is 10. Only the first 10 will be used.\n");
         input_data->num_provinces = 10;
     }
-
-    for (int i = 0; i < input_data->num_provinces; i++) {
+	int i;
+    for (i = 0; i < input_data->num_provinces; i++) {
         printf("?? Province %d:\n", i + 1);
 
         printf("   ?? Number of pharmacies: ");
@@ -41,7 +41,8 @@ void print_input_summary(const SystemInput* input_data) {
     printf("Number of provinces: %d\n", input_data->num_provinces);
     printf("Average distribution time: %d seconds\n", input_data->average_distribution_time);
 
-    for (int i = 0; i < input_data->num_provinces; i++) {
+	int i;
+    for (i = 0; i < input_data->num_provinces; i++) {
         int total_requests = input_data->provinces[i].points.pharmacies
                            + input_data->provinces[i].points.clinics
                            + input_data->provinces[i].points.hospitals;
