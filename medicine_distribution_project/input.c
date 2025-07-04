@@ -18,8 +18,14 @@ void read_user_input(SystemInput* input_data) {
     for (int i = 0; i < input_data->num_provinces; i++) {
         printf("?? Province %d:\n", i + 1);
 
-        printf("   ?? Number of requests (pharmacies + clinics): ");
-        scanf("%d", &input_data->provinces[i].num_requests);
+        printf("   ?? Number of pharmacies: ");
+        scanf("%d", &input_data->provinces[i].points.pharmacies);
+
+        printf("   ?? Number of clinics: ");
+        scanf("%d", &input_data->provinces[i].points.clinics);
+
+        printf("   ?? Number of hospitals: ");
+        scanf("%d", &input_data->provinces[i].points.hospitals);
 
         printf("   ?? Number of distributors: ");
         scanf("%d", &input_data->provinces[i].num_distributors);
@@ -36,8 +42,15 @@ void print_input_summary(const SystemInput* input_data) {
     printf("Average distribution time: %d seconds\n", input_data->average_distribution_time);
 
     for (int i = 0; i < input_data->num_provinces; i++) {
-        printf(" - Province %d: %d requests - %d distributors\n", i + 1,
-               input_data->provinces[i].num_requests,
-               input_data->provinces[i].num_distributors);
+        int total_requests = input_data->provinces[i].points.pharmacies
+                           + input_data->provinces[i].points.clinics
+                           + input_data->provinces[i].points.hospitals;
+        printf(" - Province %d: Pharmacies=%d, Clinics=%d, Hospitals=%d, Total Requests=%d, Distributors=%d\n", 
+            i + 1,
+            input_data->provinces[i].points.pharmacies,
+            input_data->provinces[i].points.clinics,
+            input_data->provinces[i].points.hospitals,
+            total_requests,
+            input_data->provinces[i].num_distributors);
     }
 }
