@@ -1,0 +1,43 @@
+// input.c
+// Implementation of functions for reading user input
+
+#include <stdio.h>
+#include "input.h"
+
+// Function to read user input
+void read_user_input(SystemInput* input_data) {
+    printf("?? Enter the number of provinces: ");
+    scanf("%d", &input_data->num_provinces);
+
+    // Check for maximum limit
+    if (input_data->num_provinces > 10) {
+        printf("?? Maximum number of provinces is 10. Only the first 10 will be used.\n");
+        input_data->num_provinces = 10;
+    }
+
+    for (int i = 0; i < input_data->num_provinces; i++) {
+        printf("?? Province %d:\n", i + 1);
+
+        printf("   ?? Number of requests (pharmacies + clinics): ");
+        scanf("%d", &input_data->provinces[i].num_requests);
+
+        printf("   ?? Number of distributors: ");
+        scanf("%d", &input_data->provinces[i].num_distributors);
+    }
+
+    printf("?? Enter the average time to distribute a single order (in seconds): ");
+    scanf("%d", &input_data->average_distribution_time);
+}
+
+// Function to print a summary of inputs (for verification)
+void print_input_summary(const SystemInput* input_data) {
+    printf("\n?? Input Summary:\n");
+    printf("Number of provinces: %d\n", input_data->num_provinces);
+    printf("Average distribution time: %d seconds\n", input_data->average_distribution_time);
+
+    for (int i = 0; i < input_data->num_provinces; i++) {
+        printf(" - Province %d: %d requests - %d distributors\n", i + 1,
+               input_data->provinces[i].num_requests,
+               input_data->provinces[i].num_distributors);
+    }
+}
