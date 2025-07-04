@@ -12,8 +12,8 @@ int master_init(int total_provinces) {
 
     num_provinces = total_provinces;
 
-    // ?????? ????? ?? ????? ?????????
-    for (int i = 0; i < num_provinces; i++) {
+	int i;    
+    for (i = 0; i < num_provinces; i++) {
         int tid = recv_int(NULL, MSG_REGISTER_PROVINCE);
         province_status[i].tid = tid;
         province_status[i].remaining_requests = 0;
@@ -39,7 +39,8 @@ void master_run() {
 
         // ?????? ?? ????? ?? ?????????
         int done = 1;
-        for (int i = 0; i < num_provinces; i++) {
+		int i;
+        for (i = 0; i < num_provinces; i++) {
             if (province_status[i].remaining_requests > 0) {
                 done = 0;
                 break;
@@ -58,8 +59,9 @@ void handle_province_report(int province_id, int remaining_requests, int idle_di
     province_status[province_id].idle_distributors = idle_distributors;
 
     // ?????? ????? ?????? ?????? ???? ???????? ?????
+	int i;
     if (idle_distributors > 0) {
-        for (int i = 0; i < num_provinces; i++) {
+        for (i = 0; i < num_provinces; i++) {
             if (i != province_id && province_status[i].remaining_requests > 0) {
                 reassign_distributors(province_id, i);
                 break;
@@ -83,7 +85,8 @@ void reassign_distributors(int source_province_id, int target_province_id) {
 }
 
 void master_finalize() {
-    for (int i = 0; i < num_provinces; i++) {
+    int i;
+	for (i = 0; i < num_provinces; i++) {
         send_int(province_status[i].tid, MSG_TERMINATE, 0);
     }
 }

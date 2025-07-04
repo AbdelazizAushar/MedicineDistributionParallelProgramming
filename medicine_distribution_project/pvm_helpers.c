@@ -59,7 +59,8 @@ int recv_signal(int src_tid, int tag) {
 
 // Broadcast an integer value to a list of tids
 int broadcast_int(int* tids, int count, int tag, int value) {
-    for (int i = 0; i < count; i++) {
+    int i;
+	for (i = 0; i < count; i++) {
         int err = send_int_message(tids[i], tag, &value, 1);
         if (err < 0) {
             fprintf(stderr, "?? Failed to broadcast to tid=%d\n", tids[i]);
