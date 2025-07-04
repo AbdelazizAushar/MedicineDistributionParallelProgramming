@@ -4,6 +4,7 @@
 #include "province.h"
 #include "message.h"
 #include "pvm_helpers.h"
+#include <pvm3.h>  // Main PVM header
 
 // Province internal state
 static int province_id = -1;
@@ -78,6 +79,7 @@ void province_run() {
     int bufid;
     int msg_tag;
     int sender_tid;
+    int bytes, msgtag, tid;  // variables for pvm_bufinfo
     int buffer[10];  /* example buffer for incoming data, adjust size as needed */
     int unpacked;
 
@@ -88,8 +90,14 @@ void province_run() {
             continue;
         }
 
-        sender_tid = pvm_gettid(bufid);
-        pvm_bufinfo(bufid, &msg_tag, NULL);
+        // Get sender TID and message tag using pvm_bufinfo
+        if (pvm_bufinfo(bufid, &bytes, &msgtag, &tid) < 0) {
+            fprintf(stderr, "[Province %d] Failed to get buffer info\n", province_id);
+            continue;
+        }
+        
+        sender_tid = tid;
+        msg_tag = msgtag;
 
         switch (msg_tag) {
             case MSG_REQUEST_IDLE_DISTRIBUTOR:
