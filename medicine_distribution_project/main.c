@@ -26,8 +26,8 @@ int main(int argc, char* argv[]) {
     int spawned_count = 0;
     
     printf("\n=== Spawning Province Processes ===\n");
-    
-    for (int i = 0; i < input_data.num_provinces; i++) {
+    int i;
+    for (i = 0; i < input_data.num_provinces; i++) {
         // Calculate total requests for this province
         int total_requests = input_data.provinces[i].points.pharmacies +
                            input_data.provinces[i].points.clinics +
