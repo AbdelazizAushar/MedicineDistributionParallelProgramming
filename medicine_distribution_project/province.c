@@ -14,9 +14,10 @@ static int remaining_requests = 0;
 static int idle_distributors = 0;
 
 // Initialize the province coordinator communicator and state
-int province_init(int p_id, int distributors) {
+int province_init(int p_id, int distributors, int total_requests) {
     province_id = p_id;
     num_distributors = distributors;
+    remaining_requests = total_requests;  // Set initial requests based on input
 
     distributor_tids = (int*) malloc(sizeof(int) * num_distributors);
     if (!distributor_tids) {
@@ -29,10 +30,10 @@ int province_init(int p_id, int distributors) {
         distributor_tids[i] = -1;  // Will be set when distributors register or assigned
     }
 
-    remaining_requests = 0;  // will be updated when receiving from master
     idle_distributors = num_distributors;
 
-    printf("? Province coordinator %d initialized with %d distributors\n", province_id, num_distributors);
+    printf("? Province coordinator %d initialized with %d distributors and %d total requests\n", 
+           province_id, num_distributors, remaining_requests);
     return 0;
 }
 

@@ -4,7 +4,7 @@
 #include <pvm3.h>
 #include "messages.h"
 
-int province_init(int province_id, int num_distributors);
+int province_init(int province_id, int num_distributors, int total_requests);
 
 void province_run();
 
