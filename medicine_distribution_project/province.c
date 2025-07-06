@@ -10,12 +10,14 @@
 static int province_id = -1;
 static int num_distributors = 0;
 static int* distributor_tids = NULL;
+static int* distributor_busy = NULL;  // 0 = idle, 1 = busy
 static int remaining_requests = 0;
 static int idle_distributors = 0;
 static int master_tid = -1;
-static int average_time = 2; /* Default distribution time */
-
+static int average_time = 2;
+static int expected_distributors = 0;  // How many we're waiting for
 /* Initialize the province coordinator and spawn distributors */
+
 int province_init(int p_id, int distributors, int total_requests, int avg_time)
 {
     int i;
@@ -48,6 +50,12 @@ int province_init(int p_id, int distributors, int total_requests, int avg_time)
         distributor_tids[i] = -1;
     }
 
+	// In province_init(), allocate and initialize the busy array:
+		distributor_busy = (int*) malloc(sizeof(int) * num_distributors);
+		for (i = 0; i < num_distributors; i++) {
+			distributor_busy[i] = 0;  // 0 = idle, 1 = busy
+		}
+
     printf("[Province %d] Initialized with %d distributors and %d total requests\n",
            province_id, num_distributors, remaining_requests);
 
@@ -64,7 +72,7 @@ int province_init(int p_id, int distributors, int total_requests, int avg_time)
         arg_ptrs[2] = args[2];
         arg_ptrs[3] = NULL;
 
-        result = pvm_spawn("distributor", arg_ptrs, PvmTaskDefault, "", 1, &distributor_tids[i]);
+        result = pvm_spawn("distributor_process", arg_ptrs, PvmTaskDefault, "", 1, &distributor_tids[i]);
 
         if (result != 1) {
             fprintf(stderr, "[Province %d] Failed to spawn distributor %d\n", province_id, i);
@@ -164,18 +172,18 @@ void assign_tasks_to_distributors(void)
     int i;
 
     if (remaining_requests > 0 && idle_distributors > 0) {
-        /* Assign a task to an idle distributor */
         for (i = 0; i < num_distributors; i++) {
-            if (distributor_tids[i] > 0) {
+            if (distributor_tids[i] > 0 && distributor_busy[i] == 0) {  // Available and idle
                 int val = remaining_requests;
                 send_int_message(distributor_tids[i], MSG_ASSIGN_TASK, &val, 1);
 
                 remaining_requests--;
                 idle_distributors--;
+                distributor_busy[i] = 1;  // Mark as busy
 
-                printf("[Province %d] Assigned task to distributor %d, remaining=%d\n",
-                       province_id, distributor_tids[i], remaining_requests);
-
+                printf("[Province %d] Assigned task to distributor %d (TID: %d), remaining=%d\n",
+                       province_id, i, distributor_tids[i], remaining_requests);
+                
                 if (remaining_requests == 0 || idle_distributors == 0) {
                     break;
                 }
@@ -193,13 +201,15 @@ void province_run(void)
     int bytes, unpacked;
     int buffer[10];
     int report_counter = 0;
-
+	int i;
     printf("[Province %d] Starting main event loop\n", province_id);
 
     /* Register with master */
     {
         int mytid = pvm_mytid();
-        send_int_message(master_tid, MSG_REGISTER_PROVINCE, &mytid, 1);
+		pvm_initsend(PvmDataDefault);
+		pvm_pkint(&province_id, 1, 1);
+		pvm_send(master_tid, MSG_REGISTER_PROVINCE);
     }
 
     while (1) {
@@ -220,10 +230,7 @@ void province_run(void)
         }
 
         /* Get message info */
-        if (pvm_bufinfo(bufid, &bytes, &msg_tag, &sender_tid) < 0) {
-            fprintf(stderr, "[Province %d] Failed to get buffer info\n", province_id);
-            continue;
-        }
+        pvm_bufinfo(bufid, &bytes, &msg_tag, &sender_tid);
 
         switch (msg_tag) {
             case MSG_REQUEST_IDLE_DISTRIBUTOR:
@@ -238,14 +245,21 @@ void province_run(void)
                 break;
 
             case MSG_DISTRIBUTOR_STATUS:
-                /* Distributor finished a task */
-                unpacked = pvm_upkint(buffer, 1, 1);
-                if (unpacked == 1) {
-                    idle_distributors++;
-                    printf("[Province %d] Distributor %d finished task, idle count: %d\n",
-                           province_id, buffer[0], idle_distributors);
-                }
-                break;
+			
+				/* Distributor finished a task */
+				pvm_upkint(buffer, 1, 1);
+    
+				// Find which distributor this is and mark as idle
+				for (i = 0; i < num_distributors; i++) {
+					if (distributor_tids[i] == sender_tid && distributor_busy[i] == 1) {
+						distributor_busy[i] = 0;  // Mark as idle
+						idle_distributors++;
+						printf("[Province %d] Distributor %d finished task, idle count: %d\n",
+							   province_id, i, idle_distributors);
+						break;
+					}
+				}
+				break;
 
             case MSG_TERMINATE:
                 printf("[Province %d] Received terminate signal\n", province_id);
@@ -275,6 +289,10 @@ void province_finalize(void)
     if (distributor_tids) {
         free(distributor_tids);
         distributor_tids = NULL;
+    }
+    if (distributor_busy) {
+        free(distributor_busy);
+        distributor_busy = NULL;
     }
     printf("[Province %d] Finalized and resources cleaned up\n", province_id);
 }

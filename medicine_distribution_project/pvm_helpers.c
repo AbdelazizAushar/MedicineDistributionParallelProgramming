@@ -44,14 +44,14 @@ int send_int(int dest_tid, int tag, int value) {
 
 /* Receives a single integer from any task with a specific tag. */
 int recv_int(int* sender_tid, int tag) {
-    int tid, value, result;
+    int cc, tid, value, result;
 
-    tid = pvm_recv(-1, tag);
-    if (tid < 0) {
+    cc = pvm_recv(-1, tag);
+    if (cc < 0) {
         fprintf(stderr, "[PVM] Failed to receive int (tag=%d)\n", tag);
         return -1;
     }
-
+	pvm_bufinfo(cc, (int*)0, (int*)0, &tid);
     result = pvm_upkint(&value, 1, 1);
     if (result != 1) {
         fprintf(stderr, "[PVM] Failed to unpack received int\n");
