@@ -13,7 +13,11 @@ int num_provinces = 0;
  * Initialize the master process by waiting for all provinces to register.
  */
 int master_init(int total_provinces) {
-    int i, sender_tid, tid;
+    int i;
+    int sender_tid;
+    int bufid;
+    int bytes, msg_tag, tid;
+    int province_id;
 
     if (total_provinces > MAX_PROVINCES) {
         fprintf(stderr, "[Master] Exceeded max number of provinces (%d)\n", MAX_PROVINCES);
@@ -25,18 +29,33 @@ int master_init(int total_provinces) {
     printf("[Master] Waiting for %d provinces to register\n", num_provinces);
 
     for (i = 0; i < num_provinces; i++) {
-        tid = recv_int(&sender_tid, MSG_REGISTER_PROVINCE);
-
-        if (tid < 0) {
+        // Receive a message with tag MSG_REGISTER_PROVINCE from any sender
+        bufid = pvm_recv(-1, MSG_REGISTER_PROVINCE);
+        if (bufid < 0) {
             fprintf(stderr, "[Master] Failed to receive registration from province %d\n", i);
             return -1;
         }
 
-        province_status[i].tid = sender_tid;
-        province_status[i].remaining_requests = 0;
-        province_status[i].idle_distributors = 0;
+        // Get message info (bytes, tag, sender tid)
+        if (pvm_bufinfo(bufid, &bytes, &msg_tag, &tid) < 0) {
+            fprintf(stderr, "[Master] Failed to get buffer info for province %d\n", i);
+            return -1;
+        }
 
-        printf("[Master] Registered province %d with TID %d\n", i, sender_tid);
+        // Unpack the province ID (integer) from the message
+		pvm_upkint(&province_id, 1, 1);
+       
+        // Store sender TID for this province, indexed by province_id
+        if (province_id < 0 || province_id >= MAX_PROVINCES) {
+            fprintf(stderr, "[Master] Invalid province ID %d received\n", province_id);
+            return -1;
+        }
+
+        province_status[province_id].tid = tid;
+        province_status[province_id].remaining_requests = 0;
+        province_status[province_id].idle_distributors = 0;
+
+        printf("[Master] Registered province %d with TID %d\n", province_id, tid);
     }
 
     printf("[Master] All provinces registered successfully\n");
@@ -56,26 +75,14 @@ void master_run() {
 
     while (1) {
         bufid = pvm_recv(-1, MSG_PROVINCE_REPORT);
-        if (bufid < 0) {
-            fprintf(stderr, "[Master] Failed to receive province report\n");
-            continue;
-        }
-
-        if (pvm_bufinfo(bufid, &bytes, &msgtag, &tid) < 0) {
-            fprintf(stderr, "[Master] Failed to get buffer info\n");
-            continue;
-        }
-
+		pvm_bufinfo(bufid, &bytes, &msgtag, &tid);
         sender_tid = tid;
-
-        if (pvm_upkint(buffer, 3, 1) != 3) {
-            fprintf(stderr, "[Master] Failed to unpack province report\n");
-            continue;
-        }
+		pvm_upkint(buffer, 3, 1);
 
         province_id = buffer[0];
         remaining = buffer[1];
         idle = buffer[2];
+
 
         if (province_id < 0 || province_id >= num_provinces) {
             fprintf(stderr, "[Master] Invalid province ID: %d\n", province_id);
