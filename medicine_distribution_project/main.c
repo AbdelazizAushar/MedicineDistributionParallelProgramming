@@ -11,9 +11,10 @@ int main(int argc, char* argv[]) {
     SystemInput input_data;
     int province_tids[MAX_PROVINCES];
     int spawned_count;
-    int i;
+    int i, j;
     int total_requests;
     char args[4][20];
+    char* arg_ptrs[5];  // 4 args + NULL terminator
     int tid;
     int result;
 
@@ -41,12 +42,20 @@ int main(int argc, char* argv[]) {
                          input_data.provinces[i].points.clinics +
                          input_data.provinces[i].points.hospitals;
 
-        sprintf(args[0], "province");
-        sprintf(args[1], "%d", i);  // province_id
+        // Prepare arguments as strings
+        sprintf(args[0], "province");  // role name
+        sprintf(args[1], "%d", i);     // province_id
         sprintf(args[2], "%d", input_data.provinces[i].num_distributors);
-        sprintf(args[3], "%d", total_requests);  // total requests
+        sprintf(args[3], "%d", total_requests);
 
-        result = pvm_spawn("medicine_distribution_project", args, 0, "", 4, &tid);
+        // Setup argument pointers array (must be null-terminated)
+        for (j = 0; j < 4; j++) {
+            arg_ptrs[j] = args[j];
+        }
+        arg_ptrs[4] = NULL;
+
+        // Spawn province process with 4 args
+        result = pvm_spawn("medicine_distribution_project", arg_ptrs, 0, "", 4, &tid);
 
         if (result < 0) {
             fprintf(stderr, "Failed to spawn province %d\n", i);
@@ -56,7 +65,7 @@ int main(int argc, char* argv[]) {
         province_tids[spawned_count] = tid;
         spawned_count++;
 
-        printf("Spawned province %d with TID %d (%d distributors, %d requests)\n", 
+        printf("Spawned province %d with TID %d (%d distributors, %d requests)\n",
                i, tid, input_data.provinces[i].num_distributors, total_requests);
     }
 
