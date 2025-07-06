@@ -2,9 +2,9 @@
 #define PROVINCE_H
 
 #include <pvm3.h>
-#include "message.h"
+#include "messages.h"
 
-int province_init(int province_id, int num_distributors, int total_requests);
+int province_init(int p_id, int distributors, int total_requests, int avg_time);
 
 void province_run();
 
