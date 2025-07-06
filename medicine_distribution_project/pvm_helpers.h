@@ -2,7 +2,7 @@
 #define PVM_HELPERS_H
 
 #include <pvm3.h>
-#include "message.h" 
+#include "messages.h" 
 
 
 int pvm_init(const char* task_name);

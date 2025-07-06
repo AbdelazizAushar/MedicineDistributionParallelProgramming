@@ -1,22 +1,73 @@
 #include <stdio.h>
 #include <string.h>
+#include <pvm3.h>
 #include "pvm_helpers.h"
 
-// Initialize the PVM task and register its TID
+/* ============================================================================
+ * PVM Helpers Implementation
+ * Author: [Your Name]
+ * Description: Utility functions for common PVM message operations.
+ * ========================================================================== */
+
+/* === Initialization === */
+
+/* Registers the current task with PVM and returns its TID. */
 int pvm_init(const char* task_name) {
     int tid;
 
     tid = pvm_mytid();
     if (tid < 0) {
-        fprintf(stderr, "? Failed to register with PVM\n");
+        fprintf(stderr, "[PVM] Failed to register with PVM\n");
         return -1;
     }
 
-    printf("? Task %s registered with tid=%d\n", task_name, tid);
+    printf("[PVM] Task '%s' registered with tid=%d\n", task_name, tid);
     return tid;
 }
 
-// Send an integer array
+/* === Integer Messaging === */
+
+/* Sends a single integer to a destination task. */
+int send_int(int dest_tid, int tag, int value) {
+    int err;
+
+    pvm_initsend(PvmDataDefault);
+    pvm_pkint(&value, 1, 1);
+    err = pvm_send(dest_tid, tag);
+
+    if (err < 0) {
+        fprintf(stderr, "[PVM] Failed to send int (tag=%d) to tid=%d\n", tag, dest_tid);
+    }
+
+    return err;
+}
+
+/* Receives a single integer from any task with a specific tag. */
+int recv_int(int* sender_tid, int tag) {
+    int tid, value, result;
+
+    tid = pvm_recv(-1, tag);
+    if (tid < 0) {
+        fprintf(stderr, "[PVM] Failed to receive int (tag=%d)\n", tag);
+        return -1;
+    }
+
+    result = pvm_upkint(&value, 1, 1);
+    if (result != 1) {
+        fprintf(stderr, "[PVM] Failed to unpack received int\n");
+        return -1;
+    }
+
+    if (sender_tid != 0) {
+        *sender_tid = tid;
+    }
+
+    return value;
+}
+
+/* === Integer Array Messaging === */
+
+/* Sends an array of integers to a destination task. */
 int send_int_message(int dest_tid, int tag, int* data, int count) {
     int err;
 
@@ -25,32 +76,33 @@ int send_int_message(int dest_tid, int tag, int* data, int count) {
     err = pvm_send(dest_tid, tag);
 
     if (err < 0) {
-        fprintf(stderr, "? Failed to send message with tag=%d to tid=%d\n", tag, dest_tid);
+        fprintf(stderr, "[PVM] Failed to send int array (tag=%d) to tid=%d\n", tag, dest_tid);
     }
 
     return err;
 }
 
-// Receive an integer array
+/* Receives an array of integers from a specific task with a given tag. */
 int recv_int_message(int src_tid, int tag, int* buffer, int count) {
-    int sender_tid;
-    int n;
+    int sender_tid, unpacked;
 
     sender_tid = pvm_recv(src_tid, tag);
     if (sender_tid < 0) {
-        fprintf(stderr, "? Failed to receive message with tag=%d\n", tag);
+        fprintf(stderr, "[PVM] Failed to receive int array (tag=%d)\n", tag);
         return -1;
     }
 
-    n = pvm_upkint(buffer, count, 1);
-    if (n != count) {
-        fprintf(stderr, "?? Number of integers received (%d) does not match expected (%d)\n", n, count);
+    unpacked = pvm_upkint(buffer, count, 1);
+    if (unpacked != count) {
+        fprintf(stderr, "[PVM] Mismatch in received int array size (expected %d, got %d)\n", count, unpacked);
     }
 
     return sender_tid;
 }
 
-// Send a signal with no data
+/* === Signal Messaging === */
+
+/* Sends a signal (no data) to a destination task. */
 int send_signal(int dest_tid, int tag) {
     int err;
 
@@ -58,34 +110,35 @@ int send_signal(int dest_tid, int tag) {
     err = pvm_send(dest_tid, tag);
 
     if (err < 0) {
-        fprintf(stderr, "? Failed to send signal with tag=%d to tid=%d\n", tag, dest_tid);
+        fprintf(stderr, "[PVM] Failed to send signal (tag=%d) to tid=%d\n", tag, dest_tid);
     }
 
     return err;
 }
 
-// Receive a signal with no data
+/* Receives a signal (no data) from a specific task with a given tag. */
 int recv_signal(int src_tid, int tag) {
     int sender_tid;
 
     sender_tid = pvm_recv(src_tid, tag);
     if (sender_tid < 0) {
-        fprintf(stderr, "? Failed to receive signal with tag=%d\n", tag);
+        fprintf(stderr, "[PVM] Failed to receive signal (tag=%d)\n", tag);
         return -1;
     }
 
     return sender_tid;
 }
 
-// Broadcast an integer value to a list of tids
+/* === Broadcast Utilities === */
+
+/* Broadcasts a single integer to a list of destination task IDs. */
 int broadcast_int(int* tids, int count, int tag, int value) {
-    int i;
-    int err;
+    int i, err;
 
     for (i = 0; i < count; i++) {
-        err = send_int_message(tids[i], tag, &value, 1);
+        err = send_int(tids[i], tag, value);
         if (err < 0) {
-            fprintf(stderr, "?? Failed to broadcast to tid=%d\n", tids[i]);
+            fprintf(stderr, "[PVM] Failed to broadcast to tid=%d\n", tids[i]);
             return err;
         }
     }
@@ -93,15 +146,21 @@ int broadcast_int(int* tids, int count, int tag, int value) {
     return 0;
 }
 
-// Example role detection based on argc/argv (you can adjust logic here)
+/* === Role Resolution === */
+
+/* Determines the role of the task from command-line arguments. */
 int determine_role(int argc, char* argv[]) {
     if (argc < 2) {
-        return 0; // Default to Master
+        return 0; /* Default to master */
     }
 
-    if (strcmp(argv[1], "master") == 0) return 0;
-    if (strcmp(argv[1], "province") == 0) return 1;
-    if (strcmp(argv[1], "distributor") == 0) return 2;
+    if (strcmp(argv[1], "master") == 0) {
+        return 0;
+    } else if (strcmp(argv[1], "province") == 0) {
+        return 1;
+    } else if (strcmp(argv[1], "distributor") == 0) {
+        return 2;
+    }
 
-    return -1; // Unknown role
+    return -1;
 }

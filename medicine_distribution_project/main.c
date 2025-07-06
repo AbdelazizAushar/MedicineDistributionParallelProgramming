@@ -1,24 +1,23 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pvm3.h>
 #include "input.h"
 #include "master.h"
 #include "province.h"
+#include "messages.h"
 
 int main(int argc, char* argv[]) {
-    // === Variable Declarations ===
     int mytid;
     SystemInput input_data;
-    int province_tids[MAX_PROVINCES];
-    int spawned_count;
     int i, j;
     int total_requests;
-    char args[4][20];
-    char* arg_ptrs[5];  // 4 args + NULL terminator
-    int tid;
+    char args[5][20];  // Increased to 5 for safety
+    char* arg_ptrs[6];  // 5 args + NULL terminator
     int result;
+    int spawned_count = 0;
 
-    // === Initialize PVM ===
+    // Initialize PVM
     mytid = pvm_mytid();
     if (mytid < 0) {
         fprintf(stderr, "Failed to initialize PVM\n");
@@ -26,16 +25,15 @@ int main(int argc, char* argv[]) {
     }
 
     printf("=== Medicine Distribution System ===\n");
+    printf("Master TID: %d\n", mytid);
 
     // Read user input
     read_user_input(&input_data);
     print_input_summary(&input_data);
 
-    // Spawn province processes
-    spawned_count = 0;
-
     printf("\n=== Spawning Province Processes ===\n");
 
+    // Spawn province processes
     for (i = 0; i < input_data.num_provinces; i++) {
         // Calculate total requests for this province
         total_requests = input_data.provinces[i].points.pharmacies +
@@ -43,10 +41,10 @@ int main(int argc, char* argv[]) {
                          input_data.provinces[i].points.hospitals;
 
         // Prepare arguments as strings
-        sprintf(args[0], "province");  // role name
-        sprintf(args[1], "%d", i);     // province_id
-        sprintf(args[2], "%d", input_data.provinces[i].num_distributors);
-        sprintf(args[3], "%d", total_requests);
+        sprintf(args[0], "%d", i);     // province_id
+        sprintf(args[1], "%d", input_data.provinces[i].num_distributors);  // num_distributors
+        sprintf(args[2], "%d", total_requests);  // total_requests
+        sprintf(args[3], "%d", input_data.average_distribution_time);  // avg_time
 
         // Setup argument pointers array (must be null-terminated)
         for (j = 0; j < 4; j++) {
@@ -54,19 +52,15 @@ int main(int argc, char* argv[]) {
         }
         arg_ptrs[4] = NULL;
 
-        // Spawn province process with 4 args
-        result = pvm_spawn("medicine_distribution_project", arg_ptrs, 0, "", 4, &tid);
+        // Spawn province process
+        result = pvm_spawn("province_process", arg_ptrs, PvmTaskDefault, "", 1, &spawned_count);
 
-        if (result < 0) {
-            fprintf(stderr, "Failed to spawn province %d\n", i);
+        if (result != 1) {
+            fprintf(stderr, "Failed to spawn province %d (result: %d)\n", i, result);
             continue;
         }
 
-        province_tids[spawned_count] = tid;
-        spawned_count++;
-
-        printf("Spawned province %d with TID %d (%d distributors, %d requests)\n",
-               i, tid, input_data.provinces[i].num_distributors, total_requests);
+        printf("Successfully spawned province %d (TID will be received during registration)\n", i);
     }
 
     if (spawned_count == 0) {
@@ -75,16 +69,20 @@ int main(int argc, char* argv[]) {
     }
 
     printf("\n=== Starting Master Process ===\n");
-    printf("Successfully spawned %d provinces\n", spawned_count);
+    printf("Waiting for %d provinces to register\n", input_data.num_provinces);
 
     // Initialize and run master
-    if (master_init(spawned_count) != 0) {
+    if (master_init(input_data.num_provinces) != 0) {
         fprintf(stderr, "Failed to initialize master\n");
         return 1;
     }
 
+    // Run master coordination loop
     master_run();
 
-    printf("\n=== System Completed ===\n");
+    printf("\n=== System Completed Successfully ===\n");
+    
+    // Exit PVM
+    pvm_exit();
     return 0;
 }
