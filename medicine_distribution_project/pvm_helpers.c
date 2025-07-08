@@ -53,7 +53,8 @@ int recv_int(int* sender_tid, int tag) {
     }
 	pvm_bufinfo(cc, (int*)0, (int*)0, &tid);
     result = pvm_upkint(&value, 1, 1);
-    if (result != 1) {
+
+    if (result < 0) {
         fprintf(stderr, "[PVM] Failed to unpack received int\n");
         return -1;
     }

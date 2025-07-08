@@ -112,7 +112,7 @@ void handle_idle_distributor_request(void)
     if (idle_distributors > 0) {
         /* Find an idle distributor */
         for (i = 0; i < num_distributors; i++) {
-            if (distributor_tids[i] > 0) {
+            if (distributor_tids[i] > 0 && distributor_busy[i] == 0) {
                 int val = distributor_tids[i];
                 send_int_message(master_tid, MSG_IDLE_DISTRIBUTOR, &val, 1);
 
@@ -134,36 +134,51 @@ void handle_idle_distributor_request(void)
 }
 
 /* Receive a new distributor reassigned by the master */
+/* Receive a new distributor reassigned by the master */
 void receive_reassigned_distributor(int new_distributor_tid)
 {
     int i;
-    int* temp;
+    int* temp_tids;
+    int* temp_busy;
 
     /* Find empty slot */
     for (i = 0; i < num_distributors; i++) {
         if (distributor_tids[i] == -1) {
             distributor_tids[i] = new_distributor_tid;
+            distributor_busy[i] = 0;  // Mark as idle
             idle_distributors++;
-            printf("[Province %d] Received reassigned distributor TID %d\n",
-                   province_id, new_distributor_tid);
+            printf("[Province %d] Received reassigned distributor TID %d in slot %d\n",
+                   province_id, new_distributor_tid, i);
             return;
         }
     }
 
-    /* Need to expand array */
-    temp = (int*) realloc(distributor_tids, sizeof(int) * (num_distributors + 1));
-    if (!temp) {
-        fprintf(stderr, "[Province %d] Failed to allocate memory for new distributor\n", province_id);
+    /* Need to expand both arrays */
+    temp_tids = (int*) realloc(distributor_tids, sizeof(int) * (num_distributors + 1));
+    if (!temp_tids) {
+        fprintf(stderr, "[Province %d] Failed to allocate memory for new distributor TIDs\n", province_id);
         return;
     }
 
-    distributor_tids = temp;
+    temp_busy = (int*) realloc(distributor_busy, sizeof(int) * (num_distributors + 1));
+    if (!temp_busy) {
+        fprintf(stderr, "[Province %d] Failed to allocate memory for new distributor busy array\n", province_id);
+        free(temp_tids);  // Clean up the first allocation
+        return;
+    }
+
+    /* Update pointers */
+    distributor_tids = temp_tids;
+    distributor_busy = temp_busy;
+    
+    /* Add new distributor */
     distributor_tids[num_distributors] = new_distributor_tid;
+    distributor_busy[num_distributors] = 0;  // Mark as idle
     num_distributors++;
     idle_distributors++;
 
-    printf("[Province %d] Received new distributor tid=%d, total now %d\n",
-           province_id, new_distributor_tid, num_distributors);
+    printf("[Province %d] Received new distributor tid=%d, total now %d, idle now %d\n",
+           province_id, new_distributor_tid, num_distributors, idle_distributors);
 }
 
 /* Simulate task assignment to distributors */
