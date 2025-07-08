@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <pvm3.h>
+#include <windows.h>  // For high-resolution timer
 #include "input.h"
 #include "master.h"
 #include "province.h"
@@ -12,10 +13,16 @@ int main(int argc, char* argv[]) {
     SystemInput input_data;
     int i, j;
     int total_requests;
-    char args[5][20];  // Increased to 5 for safety
-    char* arg_ptrs[6];  // 5 args + NULL terminator
+    char args[5][20];     // Buffer for argument strings
+    char* arg_ptrs[6];    // Array of pointers (must end with NULL)
     int result;
     int spawned_count = 0;
+
+    int sequential = 0;
+    int total_requests_overall = 0;
+
+    LARGE_INTEGER frequency, start_time, end_time;
+    double parallel_time_ms = 0.0;
 
     // Initialize PVM
     mytid = pvm_mytid();
@@ -40,13 +47,15 @@ int main(int argc, char* argv[]) {
                          input_data.provinces[i].points.clinics +
                          input_data.provinces[i].points.hospitals;
 
-        // Prepare arguments as strings
-        sprintf(args[0], "%d", i);     // province_id
-        sprintf(args[1], "%d", input_data.provinces[i].num_distributors);  // num_distributors
-        sprintf(args[2], "%d", total_requests);  // total_requests
-        sprintf(args[3], "%d", input_data.average_distribution_time);  // avg_time
+        total_requests_overall += total_requests;
 
-        // Setup argument pointers array (must be null-terminated)
+        // Prepare arguments
+        sprintf(args[0], "%d", i);  // province_id
+        sprintf(args[1], "%d", input_data.provinces[i].num_distributors);
+        sprintf(args[2], "%d", total_requests);
+        sprintf(args[3], "%d", input_data.average_distribution_time);
+
+        // Set up pointer array (null-terminated)
         for (j = 0; j < 4; j++) {
             arg_ptrs[j] = args[j];
         }
@@ -68,20 +77,38 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
+    // Calculate sequential time
+    sequential = total_requests_overall * input_data.average_distribution_time;
+
     printf("\n=== Starting Master Process ===\n");
     printf("Waiting for %d provinces to register\n", input_data.num_provinces);
 
-    // Initialize and run master
+    // Initialize master
     if (master_init(input_data.num_provinces) != 0) {
         fprintf(stderr, "Failed to initialize master\n");
         return 1;
     }
 
-    // Run master coordination loop
+    // Start high-res timer (Windows)
+    QueryPerformanceFrequency(&frequency);
+    QueryPerformanceCounter(&start_time);
+
+    // Run master coordination
     master_run();
 
+    // End timer
+    QueryPerformanceCounter(&end_time);
+
+    // Compute parallel time in milliseconds
+    parallel_time_ms = (double)(end_time.QuadPart - start_time.QuadPart) * 1000.0 / frequency.QuadPart;
+
     printf("\n=== System Completed Successfully ===\n");
-    
+
+    // Print timings
+    printf("\n=== Sequential / Parallel Time Comparison ===\n");
+    printf("Sequential would take = %d seconds\n", sequential);
+    printf("Parallel   = %.2f ms\n", parallel_time_ms);
+
     // Exit PVM
     pvm_exit();
     return 0;
