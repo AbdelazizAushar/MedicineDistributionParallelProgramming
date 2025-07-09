@@ -1,4 +1,3 @@
-// distributor_main.c - Main entry point for distributor process
 #include <stdio.h>
 #include <stdlib.h>
 #include <windows.h>
@@ -14,7 +13,6 @@ static int province_tid = -1;
 static int is_active = 1;
 static int average_time = 2;
 
-/* Fixed distributor.c - Key sections */
 
 int distributor_init(int dist_id, int prov_id) {
     distributor_id = dist_id;
@@ -66,7 +64,7 @@ void distributor_run() {
     printf("[Distributor %d] Exiting main loop\n", distributor_id);
 }
 
-/* Fixed task execution notification */
+
 void notify_task_done() {
     printf("[Distributor %d] Notifying province of task completion\n", distributor_id);
     
@@ -78,7 +76,7 @@ void notify_task_done() {
     printf("[Distributor %d] Task completion notification sent\n", distributor_id);
 }
 
-/* Fixed main function */
+
 int main(int argc, char* argv[]) {
     int dist_id, prov_id, avg_time;
     int my_tid;
@@ -106,8 +104,6 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    /* Give province time to process registration */
-;
 
     /* Run main loop */
     distributor_run();
@@ -120,7 +116,7 @@ int main(int argc, char* argv[]) {
     return 0;
 }
 
-/* ENHANCED: receive_task with better error handling */
+
 int receive_task() {
     int bufid;
     int bytes, msgtag, tid;
@@ -155,23 +151,21 @@ int receive_task() {
     }
 }
 
-/* ENHANCED: execute_task with better logging */
+
 void execute_task(void* task_data) {
     printf("[Distributor %d] Starting distribution task (duration: %d ms)\n", 
            distributor_id, average_time);
     
-    // Simulate distribution work
-
+    // Simulate distribution work here
     
     printf("[Distributor %d] Task completed successfully\n", distributor_id);
 }
 
-/* ENHANCED: wait_for_reassignment with shorter delay */
+
 void wait_for_reassignment() {
-    // Brief wait before checking agai
+    // Brief wait before checking again
 }
 
 void distributor_finalize() {
     printf("[Distributor %d] Finalizing and cleaning up\n", distributor_id);
-    // Cleanup resources if needed
 }

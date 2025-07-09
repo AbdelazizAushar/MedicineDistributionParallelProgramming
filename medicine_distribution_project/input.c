@@ -1,6 +1,3 @@
-// input.c
-// Implementation of functions for reading user input
-
 #include <stdio.h>
 #include "input.h"
 

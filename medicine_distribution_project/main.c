@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <pvm3.h>
-#include <windows.h>  // For high-resolution timer
+#include <windows.h>  
 #include "input.h"
 #include "master.h"
 #include "province.h"
@@ -13,8 +13,8 @@ int main(int argc, char* argv[]) {
     SystemInput input_data;
     int i, j;
     int total_requests;
-    char args[5][20];     // Buffer for argument strings
-    char* arg_ptrs[6];    // Array of pointers (must end with NULL)
+    char args[5][20];     
+    char* arg_ptrs[6];    
     int result;
     int spawned_count = 0;
 
@@ -55,7 +55,7 @@ int main(int argc, char* argv[]) {
         sprintf(args[2], "%d", total_requests);
         sprintf(args[3], "%d", input_data.average_distribution_time);
 
-        // Set up pointer array (null-terminated)
+        // Set up pointer array
         for (j = 0; j < 4; j++) {
             arg_ptrs[j] = args[j];
         }
@@ -77,9 +77,6 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    // Calculate sequential time
-    sequential = total_requests_overall * input_data.average_distribution_time;
-
     printf("\n=== Starting Master Process ===\n");
     printf("Waiting for %d provinces to register\n", input_data.num_provinces);
 
@@ -89,7 +86,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    // Start high-res timer (Windows)
+    // Start timer
     QueryPerformanceFrequency(&frequency);
     QueryPerformanceCounter(&start_time);
 
@@ -101,6 +98,8 @@ int main(int argc, char* argv[]) {
 
     // Compute parallel time in milliseconds
     parallel_time_ms = (double)(end_time.QuadPart - start_time.QuadPart) * 1000.0 / frequency.QuadPart;
+    // Calculate sequential time
+    sequential = total_requests_overall * input_data.average_distribution_time;
 
     printf("\n=== System Completed Successfully ===\n");
 
