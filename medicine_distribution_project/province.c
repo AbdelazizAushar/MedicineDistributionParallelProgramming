@@ -6,7 +6,7 @@
 #include "messages.h"
 #include "pvm_helpers.h"
 
-/* Province internal state */
+
 static int province_id = -1;
 static int num_distributors = 0;
 static int* distributor_tids = NULL;
@@ -15,8 +15,7 @@ static int remaining_requests = 0;
 static int idle_distributors = 0;
 static int master_tid = -1;
 static int average_time = 2;
-static int expected_distributors = 0;  // How many we're waiting for
-/* Initialize the province coordinator and spawn distributors */
+static int expected_distributors = 0;  
 
 int province_init(int p_id, int distributors, int total_requests, int avg_time)
 {
@@ -28,7 +27,7 @@ int province_init(int p_id, int distributors, int total_requests, int avg_time)
     province_id = p_id;
     num_distributors = distributors;
     remaining_requests = total_requests;
-    idle_distributors = 0; /* Will be set as distributors come online */
+    idle_distributors = 0; 
     average_time = avg_time;
 
     /* Get master TID */
@@ -88,7 +87,7 @@ int province_init(int p_id, int distributors, int total_requests, int avg_time)
     return 0;
 }
 
-/* Send a status report to the master */
+
 void send_report_to_master(void)
 {
     int buffer[3];
@@ -133,7 +132,6 @@ void handle_idle_distributor_request(void)
     printf("[Province %d] No idle distributors available\n", province_id);
 }
 
-/* Receive a new distributor reassigned by the master */
 /* Receive a new distributor reassigned by the master */
 void receive_reassigned_distributor(int new_distributor_tid)
 {
@@ -181,7 +179,7 @@ void receive_reassigned_distributor(int new_distributor_tid)
            province_id, new_distributor_tid, num_distributors, idle_distributors);
 }
 
-/* Simulate task assignment to distributors */
+
 void assign_tasks_to_distributors(void)
 {
     int i;
@@ -207,7 +205,7 @@ void assign_tasks_to_distributors(void)
     }
 }
 
-/* Main event loop to handle messages */
+
 void province_run(void)
 {
     int bufid;
@@ -298,7 +296,7 @@ void province_run(void)
     }
 }
 
-/* Clean up and free allocated resources */
+
 void province_finalize(void)
 {
     if (distributor_tids) {

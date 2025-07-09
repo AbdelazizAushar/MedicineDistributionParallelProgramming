@@ -3,15 +3,10 @@
 #include "master.h"
 #include "pvm_helpers.h"
 
-/* === Global Variables === */
+
 ProvinceStatus province_status[MAX_PROVINCES];
 int num_provinces = 0;
 
-/* === Function Implementations === */
-
-/*
- * Initialize the master process by waiting for all provinces to register.
- */
 int master_init(int total_provinces) {
     int i;
     int sender_tid;
@@ -62,9 +57,7 @@ int master_init(int total_provinces) {
     return 0;
 }
 
-/*
- * Main loop for coordination and monitoring of provinces.
- */
+
 void master_run() {
     int buffer[3];
     int sender_tid, bufid, bytes, msgtag, tid;
@@ -111,9 +104,7 @@ void master_run() {
     }
 }
 
-/*
- * Handle a report from a province.
- */
+
 void handle_province_report(int province_id, int remaining_requests, int idle_distributors) {
     int i;
 
@@ -135,9 +126,7 @@ void handle_province_report(int province_id, int remaining_requests, int idle_di
     }
 }
 
-/*
- * Reassign a distributor from one province to another.
- */
+
 void reassign_distributors(int source_province_id, int target_province_id) {
     int distributor_tid;
     int sender_tid;
@@ -162,9 +151,7 @@ void reassign_distributors(int source_province_id, int target_province_id) {
            distributor_tid, source_province_id, target_province_id);
 }
 
-/*
- * Finalize and send termination to all provinces.
- */
+
 void master_finalize() {
     int i;
 
@@ -178,9 +165,7 @@ void master_finalize() {
     printf("[Master] All provinces notified of termination\n");
 }
 
-/*
- * Notify a province that a new distributor is being assigned to it.
- */
+
 void notify_province_of_new_distributor(int distributor_tid, int target_province_tid) {
     pvm_initsend(PvmDataDefault);
     pvm_pkint(&distributor_tid, 1, 1);

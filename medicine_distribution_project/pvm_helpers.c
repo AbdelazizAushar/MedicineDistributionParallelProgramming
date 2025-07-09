@@ -3,15 +3,6 @@
 #include <pvm3.h>
 #include "pvm_helpers.h"
 
-/* ============================================================================
- * PVM Helpers Implementation
- * Author: [Your Name]
- * Description: Utility functions for common PVM message operations.
- * ========================================================================== */
-
-/* === Initialization === */
-
-/* Registers the current task with PVM and returns its TID. */
 int pvm_init(const char* task_name) {
     int tid;
 
@@ -25,9 +16,7 @@ int pvm_init(const char* task_name) {
     return tid;
 }
 
-/* === Integer Messaging === */
 
-/* Sends a single integer to a destination task. */
 int send_int(int dest_tid, int tag, int value) {
     int err;
 
@@ -42,7 +31,6 @@ int send_int(int dest_tid, int tag, int value) {
     return err;
 }
 
-/* Receives a single integer from any task with a specific tag. */
 int recv_int(int* sender_tid, int tag) {
     int cc, tid, value, result;
 
@@ -55,7 +43,6 @@ int recv_int(int* sender_tid, int tag) {
     result = pvm_upkint(&value, 1, 1);
 
     if (result < 0) {
-        //fprintf(stderr, "[PVM] Failed to unpack received int\n");
         return -1;
     }
 
@@ -66,9 +53,6 @@ int recv_int(int* sender_tid, int tag) {
     return value;
 }
 
-/* === Integer Array Messaging === */
-
-/* Sends an array of integers to a destination task. */
 int send_int_message(int dest_tid, int tag, int* data, int count) {
     int err;
 
@@ -83,7 +67,7 @@ int send_int_message(int dest_tid, int tag, int* data, int count) {
     return err;
 }
 
-/* Receives an array of integers from a specific task with a given tag. */
+
 int recv_int_message(int src_tid, int tag, int* buffer, int count) {
     int sender_tid, unpacked;
 
@@ -101,9 +85,7 @@ int recv_int_message(int src_tid, int tag, int* buffer, int count) {
     return sender_tid;
 }
 
-/* === Signal Messaging === */
 
-/* Sends a signal (no data) to a destination task. */
 int send_signal(int dest_tid, int tag) {
     int err;
 
@@ -117,7 +99,7 @@ int send_signal(int dest_tid, int tag) {
     return err;
 }
 
-/* Receives a signal (no data) from a specific task with a given tag. */
+
 int recv_signal(int src_tid, int tag) {
     int sender_tid;
 
@@ -130,9 +112,6 @@ int recv_signal(int src_tid, int tag) {
     return sender_tid;
 }
 
-/* === Broadcast Utilities === */
-
-/* Broadcasts a single integer to a list of destination task IDs. */
 int broadcast_int(int* tids, int count, int tag, int value) {
     int i, err;
 
@@ -147,9 +126,7 @@ int broadcast_int(int* tids, int count, int tag, int value) {
     return 0;
 }
 
-/* === Role Resolution === */
 
-/* Determines the role of the task from command-line arguments. */
 int determine_role(int argc, char* argv[]) {
     if (argc < 2) {
         return 0; /* Default to master */
